@@ -50,7 +50,6 @@ public class MySpaceship implements Spaceship {
 		if (state.onPlanetX()) return;
 		
 		int u = state.currentID();
-		
 		HashMap<Integer, Double> visited = new HashMap<Integer, Double>();
 		visited.put(state.currentID(), state.signal());
 		
@@ -63,27 +62,14 @@ public class MySpaceship implements Spaceship {
 				if (!state.onPlanetX()) state.moveTo(u);
 			}
 		}
-		
-		/*if (state.onPlanetX()) return;
-		ArrayList<Integer> visited = new ArrayList<Integer>();
-		visited.add(state.currentID());
-		NodeStatus[] neighbors = state.neighbors();
-		
-		for (NodeStatus ns : neighbors) {
-			if (!visited.contains(ns)) {
-				System.out.println("trying to move to: " + ns.id());
-				if (state.onPlanetX()) return;
-				state.moveTo(ns.id());
-				dfs(state, visited);
-			}
-		}*/
 	}
 	
 	public static void dfs(SearchPhase state, HashMap<Integer, Double> visited) {
 		if (state.onPlanetX()) return;
+		int u = state.currentID();
 		visited.put(state.currentID(), state.signal());
 		NodeStatus[] neighbors = state.neighbors();
-		Arrays.sort(neighbors, Collections.reverseOrder());
+		//Arrays.sort(neighbors, Collections.reverseOrder());
 		
 		int visits = 0;
 		for (NodeStatus ns : neighbors) {
@@ -93,15 +79,17 @@ public class MySpaceship implements Spaceship {
 				state.moveTo(ns.id());
 				visits++;
 				dfs(state, visited);
-				return;
+				if (!state.onPlanetX()) state.moveTo(u);
 			}
 		}
 		
+		/**
 		// Move backwards if node has no unvisited neighbors
 		if (neighbors.length == 1 && visits == 0) {
 			state.moveTo(neighbors[0].id());
 			dfs(state, visited);
 		}
+		*/
 	}
 
 	/** The spaceship is on the location given by state. Get back to Earth
