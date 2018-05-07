@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import controllers.RescuePhase;
@@ -45,15 +46,19 @@ public class MySpaceship implements Spaceship {
 	@Override
 	public void search(SearchPhase state) {
 		// TODO: Find the missing spaceship
+		if (state.onPlanetX()) return;
 		ArrayList<Integer> visited = new ArrayList<Integer>();
 		visited.add(state.currentID());
 		NodeStatus[] neighbors = state.neighbors();
 		Arrays.sort(neighbors, Collections.reverseOrder());
 		
 		for (NodeStatus ns : neighbors) {
-			state.moveTo(ns.id());
-			dfs(state, visited);
-			if (state.onPlanetX()) return;
+			if (!visited.contains(ns)) {
+				System.out.println("trying to move to: " + ns.id());
+				if (state.onPlanetX()) return;
+				state.moveTo(ns.id());
+				dfs(state, visited);
+			}
 		}
 	}
 	
@@ -65,7 +70,9 @@ public class MySpaceship implements Spaceship {
 		
 		int visits = 0;
 		for (NodeStatus ns : neighbors) {
+			System.out.println("trying to move to: " +ns.id());
 			if (!visited.contains(ns.id())) {
+				if (state.onPlanetX()) return;
 				state.moveTo(ns.id());
 				visits++;
 				dfs(state, visited);
@@ -99,20 +106,25 @@ public class MySpaceship implements Spaceship {
 	@Override
 	public void rescue(RescuePhase state) {
 		// TODO: Complete the rescue mission and collect gems
-		ArrayList<Node> visited = new ArrayList<Node>();
-		visited.add(state.currentNode());
+		System.out.println("here's the boi");
 		
-		for (Edge e : state.currentNode().exits()) {
-			Node n = e.getOther(state.currentNode());
-			if (!visited.contains(n)) {
-				state.moveTo(n);
-				returnToEarth(state, visited);
-				if (state == state.earth()) return;
-			}
+		List<Node> shortestPath = Paths.minPath(state.currentNode(), state.earth());
+		shortestPath.remove(0);
+		System.out.println(shortestPath);
+		
+		for (Node planet : shortestPath) {
+			System.out.println("current state: " + state.currentNode());
+			if (state == state.earth()) return;
+			returnToEarth(state, planet);
 		}
 	}
 	
-	public void returnToEarth(RescuePhase state, ArrayList<Node> visited) {
-		
+	public void returnToEarth(RescuePhase state, Node nextPlanet) {
+		System.out.println("want to move to: "  + nextPlanet);
+		for (Node x : state.nodes()) {
+			if (x.equals(nextPlanet)) {
+				state.moveTo(nextPlanet);
+			}
+		}
 	}
 }
