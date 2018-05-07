@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.HashMap;
 
 import controllers.RescuePhase;
 
@@ -47,10 +48,26 @@ public class MySpaceship implements Spaceship {
 	public void search(SearchPhase state) {
 		// TODO: Find the missing spaceship
 		if (state.onPlanetX()) return;
+		
+		int u = state.currentID();
+		
+		HashMap<Integer, Double> visited = new HashMap<Integer, Double>();
+		visited.put(state.currentID(), state.signal());
+		
+		for (NodeStatus ns : state.neighbors()) {
+			if (!visited.containsKey(ns.id())) {
+				if (state.onPlanetX()) return;
+				state.moveTo(ns.id());
+				visited.remove(u);
+				dfs(state, visited);
+				if (!state.onPlanetX()) state.moveTo(u);
+			}
+		}
+		
+		/*if (state.onPlanetX()) return;
 		ArrayList<Integer> visited = new ArrayList<Integer>();
 		visited.add(state.currentID());
 		NodeStatus[] neighbors = state.neighbors();
-		Arrays.sort(neighbors, Collections.reverseOrder());
 		
 		for (NodeStatus ns : neighbors) {
 			if (!visited.contains(ns)) {
@@ -59,19 +76,19 @@ public class MySpaceship implements Spaceship {
 				state.moveTo(ns.id());
 				dfs(state, visited);
 			}
-		}
+		}*/
 	}
 	
-	public static void dfs(SearchPhase state, ArrayList<Integer> visited) {
+	public static void dfs(SearchPhase state, HashMap<Integer, Double> visited) {
 		if (state.onPlanetX()) return;
-		visited.add(state.currentID());
+		visited.put(state.currentID(), state.signal());
 		NodeStatus[] neighbors = state.neighbors();
 		Arrays.sort(neighbors, Collections.reverseOrder());
 		
 		int visits = 0;
 		for (NodeStatus ns : neighbors) {
 			System.out.println("trying to move to: " +ns.id());
-			if (!visited.contains(ns.id())) {
+			if (!visited.containsKey(ns.id())) {
 				if (state.onPlanetX()) return;
 				state.moveTo(ns.id());
 				visits++;
