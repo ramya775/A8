@@ -21,6 +21,7 @@ import controllers.RescuePhase;
 public class MySpaceship implements Spaceship {
 	
 	public ArrayList<Integer> visited = new ArrayList<Integer>();
+	public ArrayList<Integer> rescueVisited = new ArrayList<Integer>();
 
 	/** The spaceship is on the location given by parameter state.
 	 * Move the spaceship to Planet X and then return (with the spaceship is on
@@ -140,14 +141,23 @@ public class MySpaceship implements Spaceship {
 		}
 	}
 	
-	@Override
-	public void rescue(RescuePhase state) {
+	//@Override
+	public void minPathRescue(RescuePhase state) {
 		
 		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
-		System.out.println("all neighbors: ");
-		System.out.println(neighbors);
+		//System.out.println("all neighbors: ");
+		//System.out.println(neighbors);
 		
 		List<Node> bestPath = Paths.minPath(state.currentNode(), state.earth());
+		//System.out.println("first best path: ");
+		//System.out.println(bestPath);
+		//System.out.println(bestPath.size());
+		//System.out.println(bestPath.get(0));
+		//System.out.println(state.currentNode());
+		
+		if (bestPath.get(0).equals(state.earth())) {
+			return;
+		}
 		
 		int maxGems = bestPath.get(1).gems();
 		int milesLeft = state.fuelRemaining();
@@ -157,34 +167,70 @@ public class MySpaceship implements Spaceship {
 				maxGems = n.gems();
 				
 				List<Node> newPath = Paths.minPath(n, state.earth());
-				System.out.println("here goes that goo boy");
-				System.out.println(newPath);
+				//System.out.println("here goes that goo boy");
+				//System.out.println(newPath);
 				
 				int distance = 0;
 				Node prev = newPath.get(0);
 				for (Node x : newPath) {
-					System.out.println("entered a new round");
-					System.out.println("prev: " + prev.name());
-					System.out.println(x.name());
+					//System.out.println("entered a new round");
+					//System.out.println("prev: " + prev.name());
+					//System.out.println(x.name());
 					//System.out.println("neighbors distance: " + x.getEdge(prev).length);
 					if (!x.equals(state.currentNode()) && !x.equals(prev)) distance += x.getEdge(prev).length;
 					prev = x;
 				}
-				System.out.println("got out");
+				//System.out.println("got out");
 				if (distance <= milesLeft) {
 					bestPath = newPath;
 				}
 			}
 		}
-		System.out.println("new best path: " );
-		System.out.println(bestPath);
+		//System.out.println("new best path: " );
+		//System.out.println(bestPath);
 		if (state.currentNode() != bestPath.get(0)) state.moveTo(bestPath.get(0));
 		bestPath.remove(0);
-		for (Node planet : bestPath) {
-			if (state == state.earth()) return;
-			returnToEarth(state, planet);
+		returnToEarth(state, bestPath.get(0));
+		rescue(state);
+		
+	}
+	
+	@Override
+	public void rescue(RescuePhase state) {
+		
+		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
+		
+		List<Node> bestPath = Paths.minPath(state.currentNode(), state.earth());
+		
+		if (bestPath.get(0).equals(state.earth())) {
+			return;
+		}
+		
+		int maxGems = bestPath.get(1).gems();
+		int milesLeft = state.fuelRemaining();
+		
+		for (Node n : neighbors.keySet()) {
+			List<Node> newPath = Paths.minPath(n, state.earth());
+			System.out.println("hi bois");
+			System.out.println(newPath);
+					
+			int distance = 0;
+			Node prev = newPath.get(0);
+			for (Node x : newPath) {
+				if (!x.equals(state.currentNode()) && !x.equals(prev)) distance += x.getEdge(prev).length;
+				prev = x;
+			}
+	
+			if (distance <= milesLeft) {
+				if (state.currentNode() != newPath.get(0)) state.moveTo(newPath.get(0));
+				newPath.remove(0);
+				returnToEarth(state, newPath.get(0));
+				rescue(state);
+			}
 		}
 		
 	}
+	
+	
 	
 }
