@@ -149,8 +149,6 @@ public class MySpaceship implements Spaceship {
 	public void returnToEarth(RescuePhase state, Node nextPlanet) {
 		for (Node x : state.nodes()) {
 			if (x.equals(nextPlanet)) {
-				System.out.println("third moveTo trying to move to: " + nextPlanet);
-				System.out.println("current node being: " + state.currentNode());
 				state.moveTo(nextPlanet);
 			}
 		}
@@ -218,14 +216,7 @@ public class MySpaceship implements Spaceship {
 	 */
 	@Override
 	public void rescue(RescuePhase state) {
-		System.out.println("started new round!");
-		System.out.println(state.currentNode());
-		System.out.println(state.earth());
-		System.out.println(state.currentNode().equals(state.earth()));
-		if (state == state.earth()) {
-			System.out.println("yes");
-			return;
-		}
+		if (state == state.earth()) return;
 		
 		Node u = state.currentNode();
 		rescueVisited.add(u);
@@ -242,57 +233,40 @@ public class MySpaceship implements Spaceship {
 			}
 		}
 		if (maxGemsNeighbor == null) {
-			if (state == state.earth()) return;
-			System.out.println("yes");
+			if (state.currentNode().equals(state.earth())) return;
 			List<Node> backTrack = Paths.minPath(state.currentNode(), state.earth());
-			System.out.println(backTrack);
 			
-			System.out.println("currently at: " + state.currentNode());
-			System.out.println("calling moveTo to: " + backTrack.get(1));
 			state.moveTo(backTrack.get(1));
 			if (state == state.earth()) return;
 			else rescue(state);
 		}
 		
 		//check if can get back to earth from that neighbor
-		System.out.println("maxGemsNeighbor is: " + maxGemsNeighbor);
+		if (state.currentNode().equals(state.earth())) return;
 		List<Node> pathBack = Paths.minPath(maxGemsNeighbor, state.earth());
 		int distance = state.currentNode().neighbors().get(maxGemsNeighbor);
-		System.out.println(pathBack);
-		pathBack.remove(0);
-		//System.out.println(pathBack);
 		
 		Node prev = maxGemsNeighbor;
-		System.out.println("distance start: " + distance);
 		for (Node x : pathBack) {
 			if (!x.equals(state.currentNode()) && !x.equals(prev)) {
-				System.out.println("adding to distance");
-				System.out.println("prev is: " + prev.name());
-				System.out.println("x is: " + x.name());
-				System.out.println("current node is: " + u.name());
-				System.out.println("distance between them is: " + x.getEdge(prev).length);
 				distance += x.getEdge(prev).length;
 			}
 			prev = x;
 		}
 		
-		//System.out.println("distance: " + distance);
-		
 		//if it has enough fuel, move to it and repeat the process
 		if (distance <= state.fuelRemaining()) {
-			System.out.println("second moveTo trying to move to: " + maxGemsNeighbor);
-			System.out.println("current node being: " + state.currentNode());
 			state.moveTo(maxGemsNeighbor);
 			rescue(state);
 		} else { //if not enough fuel get back to earth
 			if (state == state.earth()) return;
-			System.out.println("Not enough fuel");
 			List<Node> newPath = Paths.minPath(state.currentNode(), state.earth());
 			newPath.remove(0);
 			for (Node planet : newPath) {
 				if (state == state.earth()) return;
 				returnToEarth(state, planet);
 			}
+			return;
 		}
 	}
 	
