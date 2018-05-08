@@ -19,6 +19,8 @@ import controllers.RescuePhase;
 
 /** An instance implements the methods needed to complete the mission. */
 public class MySpaceship implements Spaceship {
+	
+	public ArrayList<Integer> visited = new ArrayList<Integer>();
 
 	/** The spaceship is on the location given by parameter state.
 	 * Move the spaceship to Planet X and then return (with the spaceship is on
@@ -44,53 +46,62 @@ public class MySpaceship implements Spaceship {
 	 * (3) Use method moveTo(int id) to move to a neighboring planet with the
 	 * given ID. Doing this will change state to reflect your new position.
 	 */
-	@Override
-	public void search(SearchPhase state) {
-		// TODO: Find the missing spaceship
+	//@Override
+	public void simpleSearch(SearchPhase state) {
+		// TODO: Find the missing spaceship	
+		int u = state.currentID();
+		visited.add(state.currentID());
+		
 		if (state.onPlanetX()) return;
 		
-		int u = state.currentID();
-		HashMap<Integer, Double> visited = new HashMap<Integer, Double>();
-		visited.put(state.currentID(), state.signal());
-		
 		for (NodeStatus ns : state.neighbors()) {
-			if (!visited.containsKey(ns.id())) {
-				if (state.onPlanetX()) return;
+			if (!(visited.contains(ns.id()))) {
 				state.moveTo(ns.id());
-				visited.remove(u);
-				dfs(state, visited);
-				if (!state.onPlanetX()) state.moveTo(u);
+				simpleSearch(state);
+				if (state.onPlanetX()) return;
+				state.moveTo(u);
 			}
 		}
 	}
 	
-	public static void dfs(SearchPhase state, HashMap<Integer, Double> visited) {
-		if (state.onPlanetX()) return;
+	@Override
+	public void search(SearchPhase state) {
 		int u = state.currentID();
-		visited.put(state.currentID(), state.signal());
-		NodeStatus[] neighbors = state.neighbors();
-		//Arrays.sort(neighbors, Collections.reverseOrder());
+		visited.add(state.currentID());
 		
-		int visits = 0;
-		for (NodeStatus ns : neighbors) {
-			System.out.println("trying to move to: " +ns.id());
-			if (!visited.containsKey(ns.id())) {
-				if (state.onPlanetX()) return;
+		if (state.onPlanetX()) return;
+		
+		NodeStatus[] sortedNeighbors = sortNeighbors(state.neighbors());
+		
+		for (NodeStatus ns : sortedNeighbors) {
+			if (!(visited.contains(ns.id()))) {
 				state.moveTo(ns.id());
-				visits++;
-				dfs(state, visited);
-				if (!state.onPlanetX()) state.moveTo(u);
+				search(state);
+				if (state.onPlanetX()) return;
+				state.moveTo(u);
 			}
 		}
-		
-		/**
-		// Move backwards if node has no unvisited neighbors
-		if (neighbors.length == 1 && visits == 0) {
-			state.moveTo(neighbors[0].id());
-			dfs(state, visited);
-		}
-		*/
 	}
+	
+	
+	/** Sort the neighbors of a given NodeStatus list so that the ones with larger signals
+	 * are earlier in the array and will be searched earlier.
+	 */
+	public NodeStatus[] sortNeighbors(NodeStatus[] list) {
+		for (int i = 0; i < list.length; i++) {
+			int k = i;
+			
+			while (k > 0 && list[k].signal() > list[k-1].signal()) {
+				NodeStatus temp = list[k];
+				list[k] = list[k-1];
+				list[k-1] = temp;
+				k--;
+			}
+		}
+		return list;
+	}
+	
+	
 
 	/** The spaceship is on the location given by state. Get back to Earth
 	 * without running out of fuel and return while on Earth. Your ship can
@@ -108,28 +119,72 @@ public class MySpaceship implements Spaceship {
 	 *
 	 * Note: Use moveTo() to move to a destination node adjacent to your current
 	 * node. */
-	@Override
+	/*@Override
 	public void rescue(RescuePhase state) {
 		// TODO: Complete the rescue mission and collect gems
-		System.out.println("here's the boi");
 		
 		List<Node> shortestPath = Paths.minPath(state.currentNode(), state.earth());
 		shortestPath.remove(0);
-		System.out.println(shortestPath);
 		
 		for (Node planet : shortestPath) {
-			System.out.println("current state: " + state.currentNode());
 			if (state == state.earth()) return;
 			returnToEarth(state, planet);
 		}
-	}
+	}*/
 	
 	public void returnToEarth(RescuePhase state, Node nextPlanet) {
-		System.out.println("want to move to: "  + nextPlanet);
 		for (Node x : state.nodes()) {
 			if (x.equals(nextPlanet)) {
 				state.moveTo(nextPlanet);
 			}
 		}
 	}
+	
+	@Override
+	public void rescue(RescuePhase state) {
+		
+		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
+		System.out.println("all neighbors: ");
+		System.out.println(neighbors);
+		
+		List<Node> bestPath = Paths.minPath(state.currentNode(), state.earth());
+		
+		int maxGems = bestPath.get(1).gems();
+		int milesLeft = state.fuelRemaining();
+		
+		for (Node n : neighbors.keySet()) {
+			if (n.gems() > maxGems) {
+				maxGems = n.gems();
+				
+				List<Node> newPath = Paths.minPath(n, state.earth());
+				System.out.println("here goes that goo boy");
+				System.out.println(newPath);
+				
+				int distance = 0;
+				Node prev = newPath.get(0);
+				for (Node x : newPath) {
+					System.out.println("entered a new round");
+					System.out.println("prev: " + prev.name());
+					System.out.println(x.name());
+					//System.out.println("neighbors distance: " + x.getEdge(prev).length);
+					if (!x.equals(state.currentNode()) && !x.equals(prev)) distance += x.getEdge(prev).length;
+					prev = x;
+				}
+				System.out.println("got out");
+				if (distance <= milesLeft) {
+					bestPath = newPath;
+				}
+			}
+		}
+		System.out.println("new best path: " );
+		System.out.println(bestPath);
+		if (state.currentNode() != bestPath.get(0)) state.moveTo(bestPath.get(0));
+		bestPath.remove(0);
+		for (Node planet : bestPath) {
+			if (state == state.earth()) return;
+			returnToEarth(state, planet);
+		}
+		
+	}
+	
 }
