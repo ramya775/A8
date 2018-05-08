@@ -161,15 +161,8 @@ public class MySpaceship implements Spaceship {
 	public void minPathRescue(RescuePhase state) {
 		
 		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
-		//System.out.println("all neighbors: ");
-		//System.out.println(neighbors);
 		
 		List<Node> bestPath = Paths.minPath(state.currentNode(), state.earth());
-		//System.out.println("first best path: ");
-		//System.out.println(bestPath);
-		//System.out.println(bestPath.size());
-		//System.out.println(bestPath.get(0));
-		//System.out.println(state.currentNode());
 		
 		if (bestPath.get(0).equals(state.earth())) {
 			return;
@@ -182,28 +175,19 @@ public class MySpaceship implements Spaceship {
 			if (n.gems() > maxGems) {
 				maxGems = n.gems();
 				
-				List<Node> newPath = Paths.minPath(n, state.earth());
-				//System.out.println("here goes that goo boy");
-				//System.out.println(newPath);
+				List<Node> newPath = Paths.minPath(n, state.earth());;
 				
 				int distance = 0;
 				Node prev = newPath.get(0);
 				for (Node x : newPath) {
-					//System.out.println("entered a new round");
-					//System.out.println("prev: " + prev.name());
-					//System.out.println(x.name());
-					//System.out.println("neighbors distance: " + x.getEdge(prev).length);
 					if (!x.equals(state.currentNode()) && !x.equals(prev)) distance += x.getEdge(prev).length;
 					prev = x;
 				}
-				//System.out.println("got out");
 				if (distance <= milesLeft) {
 					bestPath = newPath;
 				}
 			}
 		}
-		//System.out.println("new best path: " );
-		//System.out.println(bestPath);
 		if (state.currentNode() != bestPath.get(0)) state.moveTo(bestPath.get(0));
 		bestPath.remove(0);
 		returnToEarth(state, bestPath.get(0));
@@ -244,11 +228,10 @@ public class MySpaceship implements Spaceship {
 		//check if can get back to earth from that neighbor
 		if (state.currentNode().equals(state.earth())) return;
 		List<Node> pathBack = Paths.minPath(maxGemsNeighbor, state.earth());
-		int distance = state.currentNode().neighbors().get(maxGemsNeighbor);
-		
+		int distance = state.currentNode().getEdge(maxGemsNeighbor).length;
 		Node prev = maxGemsNeighbor;
 		for (Node x : pathBack) {
-			if (!x.equals(state.currentNode()) && !x.equals(prev)) {
+			if (!x.equals(prev)) {
 				distance += x.getEdge(prev).length;
 			}
 			prev = x;
