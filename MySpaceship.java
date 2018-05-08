@@ -20,8 +20,11 @@ import controllers.RescuePhase;
 /** An instance implements the methods needed to complete the mission. */
 public class MySpaceship implements Spaceship {
 	
+	//contains all visited planets used in the search method
 	public ArrayList<Integer> visited = new ArrayList<Integer>();
-	public ArrayList<Integer> rescueVisited = new ArrayList<Integer>();
+	
+	//contains all visited planets used in the rescue method
+	public ArrayList<Node> rescueVisited = new ArrayList<Node>();
 
 	/** The spaceship is on the location given by parameter state.
 	 * Move the spaceship to Planet X and then return (with the spaceship is on
@@ -47,7 +50,9 @@ public class MySpaceship implements Spaceship {
 	 * (3) Use method moveTo(int id) to move to a neighboring planet with the
 	 * given ID. Doing this will change state to reflect your new position.
 	 */
-	//@Override
+
+	
+	/** perform a DFS from earth to find Planet X */
 	public void simpleSearch(SearchPhase state) {
 		// TODO: Find the missing spaceship	
 		int u = state.currentID();
@@ -65,6 +70,10 @@ public class MySpaceship implements Spaceship {
 		}
 	}
 	
+	
+	/** Perform a DFS, checking out nodes with higher signals 
+	 * to Planet X first
+	 */
 	@Override
 	public void search(SearchPhase state) {
 		int u = state.currentID();
@@ -120,8 +129,11 @@ public class MySpaceship implements Spaceship {
 	 *
 	 * Note: Use moveTo() to move to a destination node adjacent to your current
 	 * node. */
-	/*@Override
-	public void rescue(RescuePhase state) {
+
+	/** Uses Dijkstra's shortest path algorithm to find the closest path from the current
+	 *  node to earth and return to earth
+	 */
+	public void simpleRescue(RescuePhase state) {
 		// TODO: Complete the rescue mission and collect gems
 		
 		List<Node> shortestPath = Paths.minPath(state.currentNode(), state.earth());
@@ -131,17 +143,23 @@ public class MySpaceship implements Spaceship {
 			if (state == state.earth()) return;
 			returnToEarth(state, planet);
 		}
-	}*/
+	}
 	
+	/** Moves the state to the next planet */
 	public void returnToEarth(RescuePhase state, Node nextPlanet) {
 		for (Node x : state.nodes()) {
 			if (x.equals(nextPlanet)) {
+				System.out.println("third moveTo trying to move to: " + nextPlanet);
+				System.out.println("current node being: " + state.currentNode());
 				state.moveTo(nextPlanet);
 			}
 		}
 	}
 	
-	//@Override
+	/** An early iteration of finding more gems - recursively checks for neighbor
+	 * with the most gems and if there's enough fuel to go to that neighbor and then back
+	 * to earth, then go.
+	 */
 	public void minPathRescue(RescuePhase state) {
 		
 		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
@@ -195,40 +213,87 @@ public class MySpaceship implements Spaceship {
 		
 	}
 	
+	/** Final optimized iteration - performs a DFS, making sure there's enough
+	 * fuel for the minPath back and ends when there isn't
+	 */
 	@Override
 	public void rescue(RescuePhase state) {
-		
-		HashMap<Node, Integer> neighbors = state.currentNode().neighbors();
-		
-		List<Node> bestPath = Paths.minPath(state.currentNode(), state.earth());
-		
-		if (bestPath.get(0).equals(state.earth())) {
+		System.out.println("started new round!");
+		System.out.println(state.currentNode());
+		System.out.println(state.earth());
+		System.out.println(state.currentNode().equals(state.earth()));
+		if (state == state.earth()) {
+			System.out.println("yes");
 			return;
 		}
 		
-		int maxGems = bestPath.get(1).gems();
-		int milesLeft = state.fuelRemaining();
+		Node u = state.currentNode();
+		rescueVisited.add(u);
 		
+		HashMap<Node, Integer> neighbors = u.neighbors();
+		Node maxGemsNeighbor = null;
+		int maxGems = 0;
+		
+		//get neighbor with most gems
 		for (Node n : neighbors.keySet()) {
-			List<Node> newPath = Paths.minPath(n, state.earth());
-			System.out.println("hi bois");
-			System.out.println(newPath);
-					
-			int distance = 0;
-			Node prev = newPath.get(0);
-			for (Node x : newPath) {
-				if (!x.equals(state.currentNode()) && !x.equals(prev)) distance += x.getEdge(prev).length;
-				prev = x;
-			}
-	
-			if (distance <= milesLeft) {
-				if (state.currentNode() != newPath.get(0)) state.moveTo(newPath.get(0));
-				newPath.remove(0);
-				returnToEarth(state, newPath.get(0));
-				rescue(state);
+			if (!rescueVisited.contains(n) && n.gems() > maxGems) {
+				maxGems = n.gems();
+				maxGemsNeighbor = n;
 			}
 		}
+		if (maxGemsNeighbor == null) {
+			if (state == state.earth()) return;
+			System.out.println("yes");
+			List<Node> backTrack = Paths.minPath(state.currentNode(), state.earth());
+			System.out.println(backTrack);
+			
+			System.out.println("currently at: " + state.currentNode());
+			System.out.println("calling moveTo to: " + backTrack.get(1));
+			state.moveTo(backTrack.get(1));
+			if (state == state.earth()) return;
+			else rescue(state);
+		}
 		
+		//check if can get back to earth from that neighbor
+		System.out.println("maxGemsNeighbor is: " + maxGemsNeighbor);
+		List<Node> pathBack = Paths.minPath(maxGemsNeighbor, state.earth());
+		int distance = state.currentNode().neighbors().get(maxGemsNeighbor);
+		System.out.println(pathBack);
+		pathBack.remove(0);
+		//System.out.println(pathBack);
+		
+		Node prev = maxGemsNeighbor;
+		System.out.println("distance start: " + distance);
+		for (Node x : pathBack) {
+			if (!x.equals(state.currentNode()) && !x.equals(prev)) {
+				System.out.println("adding to distance");
+				System.out.println("prev is: " + prev.name());
+				System.out.println("x is: " + x.name());
+				System.out.println("current node is: " + u.name());
+				System.out.println("distance between them is: " + x.getEdge(prev).length);
+				distance += x.getEdge(prev).length;
+			}
+			prev = x;
+		}
+		
+		//System.out.println("distance: " + distance);
+		
+		//if it has enough fuel, move to it and repeat the process
+		if (distance <= state.fuelRemaining()) {
+			System.out.println("second moveTo trying to move to: " + maxGemsNeighbor);
+			System.out.println("current node being: " + state.currentNode());
+			state.moveTo(maxGemsNeighbor);
+			rescue(state);
+		} else { //if not enough fuel get back to earth
+			if (state == state.earth()) return;
+			System.out.println("Not enough fuel");
+			List<Node> newPath = Paths.minPath(state.currentNode(), state.earth());
+			newPath.remove(0);
+			for (Node planet : newPath) {
+				if (state == state.earth()) return;
+				returnToEarth(state, planet);
+			}
+		}
 	}
 	
 	
